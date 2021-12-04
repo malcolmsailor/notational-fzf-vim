@@ -205,59 +205,65 @@ endfunction
 " Use `command` in front of 'rg' to ignore aliases.
 " The `' "\S" '` is so that the backslash itself doesn't require escaping.
 " g:search_paths is already shell escaped, so we don't do it again
-command! -nargs=* -bang NV
-      \ call fzf#run(
-          \ fzf#wrap({
-              \ 'sink*': function(exists('*NV_note_handler') ? 'NV_note_handler' : '<sid>handler'),
-              \ 'window': s:window_command,
-              \ 'source': join([
-                   \ s:command,
-                   \ 'rg',
-                   \ '--follow',
-                   \ s:use_ignore_files,
-                   \ '--smart-case',
-                   \ s:include_hidden,
-                   \ '--line-number',
-                   \ '--color never',
-                   \ '--no-messages',
-                   \ s:nv_ignore_pattern,
-                   \ '--no-heading',
-                   \ '--with-filename',
-                   \ ((<q-args> is '') ?
-                     \ '"\S"' :
-                     \ shellescape(<q-args>)),
-                   \ s:search_path_str,
-                   \ s:format_path_expr,
-                   \ '2>' . s:null_path,
-                   \ ]),
-              \ s:window_direction: s:window_width,
-              \ 'options': join([
-                               \ '--print-query',
-                               \ '--ansi',
-                               \ '--multi',
-                               \ '--exact',
-                               \ '--inline-info',
-                               \ '--delimiter=":"',
-                               \ '--with-nth=' . s:display_start_index ,
-                               \ '--tiebreak=' . 'length,begin' ,
-                               \ '--expect=' . s:expect_keys ,
-                               \ '--bind=' .  join([
-                                              \ 'alt-a:select-all',
-                                              \ 'alt-q:deselect-all',
-                                              \ 'alt-p:toggle-preview',
-                                              \ 'alt-u:page-up',
-                                              \ 'alt-d:page-down',
-                                              \ 'ctrl-w:backward-kill-word',
-                                              \ ], ','),
-                               \ '--preview=' . shellescape(s:highlight_path_expr) ,
-                               \ '--preview-window=' . join(filter(copy([
-                                                                   \ s:preview_direction,
-                                                                   \ s:preview_width,
-                                                                   \ s:wrap_text,
-                                                                   \ s:show_preview,
-                                                                   \ ]),
-                                                            \ 'v:val != "" ')
-                                                       \ ,':')
-                               \ ])},<bang>0))
 
-
+let s:alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+let s:index = 0
+while s:index <= len(s:search_paths) && s:index <= len(s:alphabet)
+  let s:cmd = "NV" . (s:index == 0 ? "" : s:alphabet[s:index - 1])
+  let s:cmd_search_path = '"' . (s:index == 0 ? s:search_path_str : shellescape(s:search_paths[s:index - 1])) . '"'
+  exec "command! -nargs=* -bang " . s:cmd . "
+        \ call fzf#run(
+            \ fzf#wrap({
+                \ 'sink*': function(exists('*NV_note_handler') ? 'NV_note_handler' : '<sid>handler'),
+                \ 'window': s:window_command,
+                \ 'source': join([
+                     \ s:command,
+                     \ 'rg',
+                     \ '--follow',
+                     \ s:use_ignore_files,
+                     \ '--smart-case',
+                     \ s:include_hidden,
+                     \ '--line-number',
+                     \ '--color never',
+                     \ '--no-messages',
+                     \ s:nv_ignore_pattern,
+                     \ '--no-heading',
+                     \ '--with-filename',
+                     \ ((<q-args> is '') ?
+                       \ '\"\\S\"' :
+                       \ shellescape(<q-args>)),
+                     \ " . s:cmd_search_path . ",
+                     \ s:format_path_expr,
+                     \ '2>' . s:null_path,
+                     \ ]),
+                \ s:window_direction: s:window_width,
+                \ 'options': join([
+                                 \ '--print-query',
+                                 \ '--ansi',
+                                 \ '--multi',
+                                 \ '--exact',
+                                 \ '--inline-info',
+                                 \ '--delimiter=\":\"',
+                                 \ '--with-nth=' . s:display_start_index ,
+                                 \ '--tiebreak=' . 'length,begin' ,
+                                 \ '--expect=' . s:expect_keys ,
+                                 \ '--bind=' .  join([
+                                                \ 'alt-a:select-all',
+                                                \ 'alt-q:deselect-all',
+                                                \ 'alt-p:toggle-preview',
+                                                \ 'alt-u:page-up',
+                                                \ 'alt-d:page-down',
+                                                \ 'ctrl-w:backward-kill-word',
+                                                \ ], ','),
+                                 \ '--preview=' . shellescape(s:highlight_path_expr) ,
+                                 \ '--preview-window=' . join(filter(copy([
+                                                                     \ s:preview_direction,
+                                                                     \ s:preview_width,
+                                                                     \ s:wrap_text,
+                                                                     \ s:show_preview,
+                                                                     \ ]),
+                                                              \ 'v:val != \"\" ')
+                                                         \ ,':')
+                                 \ ])},<bang>0))"
+  let s:index = s:index + 1
+endwhile
